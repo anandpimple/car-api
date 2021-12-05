@@ -55,8 +55,11 @@ public class CarServiceImpl implements CarService {
     @Override
     public CarResponse getCarByBusinessId(final String businessId) {
         logger.info("Retrieving car details for business id '{}'", businessId);
-        final Car carEntity = carRepository.getCarByBusinessId(businessId).orElseThrow(() -> new DataNotFoundException("BusinessId", String.format("Car not found with business id '%s'", businessId)));
-        return mapToResponse(carEntity);
+        return mapToResponse(getCarEntity(businessId));
+    }
+
+    private Car getCarEntity(final String businessId) {
+        return carRepository.getCarByBusinessId(businessId).orElseThrow(() -> new DataNotFoundException("BusinessId", String.format("Car not found with business id '%s'", businessId)));
     }
 
     @Override
@@ -64,5 +67,11 @@ public class CarServiceImpl implements CarService {
         logger.info("Retrieving cars for page no {} with max size {}", pageNo, size);
         final Page<Car> page = carRepository.findAll(Pageable.ofSize(size).withPage(pageNo));
         return PageResponse.builder().content(page.getContent().stream().map(CarServiceImpl::mapToResponse).collect(Collectors.toList())).page(page.getNumber()).totalPages(page.getTotalPages()).totalSize(page.getTotalElements()).size(page.getSize()).build();
+    }
+
+    @Override
+    public void delete(String businessId) {
+        logger.info("Deleting car details for business id '{}'", businessId);
+        carRepository.delete(getCarEntity(businessId));
     }
 }

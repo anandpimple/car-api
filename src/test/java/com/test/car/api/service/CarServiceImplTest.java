@@ -3,6 +3,8 @@ package com.test.car.api.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -115,5 +117,25 @@ class CarServiceImplTest {
         assertThat(response.getContent()).hasSize(2);
         assertThat(((CarResponse) response.getContent().get(0)).getId()).isEqualTo("businessId1");
         assertThat(((CarResponse) response.getContent().get(1)).getId()).isEqualTo("businessId2");
+    }
+
+    @Test
+    void givenCarWithRequestedIdNotFound_whenDeleteCarByBusinessId_thenException() {
+        when(mockCarRepository.getCarByBusinessId("businessId")).thenReturn(Optional.empty());
+
+        assertThatExceptionOfType(DataNotFoundException.class)
+            .isThrownBy(() -> underTest.delete("businessId"))
+            .withMessage("Car not found with business id 'businessId'");
+
+        verify(mockCarRepository, never()).delete(any(Car.class));
+    }
+
+    @Test
+    void givenCarWithRequestedIdFound_whenDeleteCarByBusinessId_thenSuccess() {
+        when(mockCarRepository.getCarByBusinessId("businessId")).thenReturn(Optional.of(car1));
+
+        underTest.delete("businessId");
+
+        verify(mockCarRepository).delete(car1);
     }
 }

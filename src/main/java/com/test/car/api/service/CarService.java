@@ -10,4 +10,6 @@ public interface CarService {
     CarResponse getCarByBusinessId(final String businessId);
 
     PageResponse<CarResponse> getCars(int size, int pageNo);
+
+    void delete(final String businessId);
 }
