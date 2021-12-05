@@ -7,6 +7,7 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,7 +41,7 @@ public class CarApiController {
     @GetMapping(path = "/cars", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation("To get all cars")
     public PageResponse<CarResponse> getCars(@ApiParam(required = true, example = "500", defaultValue = "500") @RequestParam(defaultValue = "500") @Max(500) int size,
-                                @ApiParam(required = true, example = "0", defaultValue = "0") @RequestParam(defaultValue = "0") @Min(0) int pageNo) {
+                                             @ApiParam(required = true, example = "0", defaultValue = "0") @RequestParam(defaultValue = "0") @Min(0) int pageNo) {
         return carServiceImpl.getCars(size, pageNo);
     }
 
@@ -48,5 +49,11 @@ public class CarApiController {
     @ApiOperation("To add new car in system")
     public CarResponse addCar(@Valid @NotNull @RequestBody final CreateCarRequest carRequest) {
         return carServiceImpl.addCar(carRequest);
+    }
+
+    @DeleteMapping(path = "/cars/{businessId}")
+    @ApiOperation("To delete car from the system")
+    public void deleteCar(@PathVariable(value = "businessId") final String businessId) {
+        carServiceImpl.delete(businessId);
     }
 }

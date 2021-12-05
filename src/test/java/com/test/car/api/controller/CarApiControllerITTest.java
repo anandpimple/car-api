@@ -1,5 +1,6 @@
 package com.test.car.api.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -9,12 +10,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,6 +32,7 @@ import com.test.car.api.model.CreateCarRequest;
 @SpringBootTest(classes = CarApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 class CarApiControllerITTest {
+    private static final Logger logger = LoggerFactory.getLogger(CarApiControllerITTest.class);
     @Autowired
     private MockMvc mockMvc;
 
@@ -46,7 +52,13 @@ class CarApiControllerITTest {
 
     @AfterEach
     void tearDown() {
-        carRepository.deleteAllById(carData);
+        try {
+            carRepository.deleteAllById(carData);
+        } catch (final EmptyResultDataAccessException exception) {
+            //Ignoring the empty data exception as its in teardown method
+            logger.info("Exception while deleting cars in tear-down", exception);
+        }
+
     }
 
     @Test
@@ -84,7 +96,7 @@ class CarApiControllerITTest {
     }
 
     @Test
-    void givenCarAbsentForBusinessId_whenGetGarByBusinessId_then404() throws Exception {
+    void givenCarAbsentForBusinessId_whenGetCarByBusinessId_then404() throws Exception {
         mockMvc.perform(get("/cars/2323232"))
             .andExpect(status().isNotFound());
     }
@@ -110,11 +122,27 @@ class CarApiControllerITTest {
 
     @Test
     void givenMultipleCars_whenGetCars_thenSuccessWithData() throws Exception {
-        addCar("businessId1", "colour", "make", "model", 1983);
-        addCar("businessId2", "colour", "make", "model", 1983);
+        final String bId1 = RandomStringUtils.randomAlphanumeric(12);
+        final String bId2 = RandomStringUtils.randomAlphanumeric(12);
+        addCar(bId1, "colour", "make", "model", 1983);
+        addCar(bId2, "colour", "make", "model", 1983);
         mockMvc.perform(get("/cars"))
             .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-            .andExpect(content().string("{\"content\":[{\"id\":\"businessId1\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983},{\"id\":\"businessId2\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983}],\"size\":500,\"totalSize\":2,\"page\":0,\"totalPages\":1}"));
+            .andExpect(content().string("{\"content\":[{\"id\":\"" + bId1 + "\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983},{\"id\":\"" + bId2 + "\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983}],\"size\":500,\"totalSize\":2,\"page\":0,\"totalPages\":1}"));
+    }
+
+    @Test
+    void givenCarAbsentForBusinessId_whenDeleteCarByBusinessId_then404() throws Exception {
+        mockMvc.perform(delete("/cars/2323232"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void givenCarPresentForBusinessId_whenDeleteCarByBusinessId_thenSuccess() throws Exception {
+        final String bId1 = RandomStringUtils.randomAlphanumeric(12);
+        addCar(bId1, "colour", "make", "model", 1983);
+        mockMvc.perform(delete("/cars/" + bId1))
+            .andExpect(status().isOk());
     }
 
     private void testValidationIssue(String make, String model, String colour, int year) throws Exception {
@@ -130,6 +158,7 @@ class CarApiControllerITTest {
         car.setColour(colour);
         car.setBusinessId(businessId);
         car.setModel(model);
+        car.setDeletedOn(null);
 
         carData.add(carRepository.save(car).getId());
     }
