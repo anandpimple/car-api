@@ -45,6 +45,10 @@ class CarApiControllerITTest {
         return new ObjectMapper();
     }
 
+    private static final String BASIC_AUTH_DETAILS = "Basic Y2FyLWFwaTpwYXNzdzByZA==";
+
+    private static final String SECURITY_HEADER = "Authorization";
+
     @BeforeEach
     void setUp() {
         carData = new ArrayList<>();
@@ -65,7 +69,7 @@ class CarApiControllerITTest {
     void givenProperCarData_whenPostCar_thenSuccess() throws Exception {
 
         CreateCarRequest carRequest = CreateCarRequest.builder().make("Make").colour("Red").model("Model").year(1999).build();
-        mockMvc.perform(post("/cars").contentType(MediaType.APPLICATION_JSON).content(mapper().writeValueAsString(carRequest)))
+        mockMvc.perform(post("/cars").contentType(MediaType.APPLICATION_JSON).header(SECURITY_HEADER, BASIC_AUTH_DETAILS).content(mapper().writeValueAsString(carRequest)))
             .andExpect(status().isOk())
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("id").isNotEmpty())
@@ -97,7 +101,7 @@ class CarApiControllerITTest {
 
     @Test
     void givenCarAbsentForBusinessId_whenGetCarByBusinessId_then404() throws Exception {
-        mockMvc.perform(get("/cars/2323232"))
+        mockMvc.perform(get("/cars/2323232").header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isNotFound());
     }
 
@@ -107,7 +111,7 @@ class CarApiControllerITTest {
         addCar("businessId2", "colour", "make", "model", 1983);
         addCar("businessId3", "colour", "make", "model", 1983);
         addCar("businessId4", "colour", "make", "model", 1983);
-        mockMvc.perform(get("/cars/businessId4"))
+        mockMvc.perform(get("/cars/businessId4").header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("id").value("businessId4"))
             .andExpect(jsonPath("make").value("make"));
@@ -115,7 +119,7 @@ class CarApiControllerITTest {
 
     @Test
     void givenNoCars_whenGetCars_thenSuccessWithEmptyData() throws Exception {
-        mockMvc.perform(get("/cars"))
+        mockMvc.perform(get("/cars").header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(content().string("{\"content\":[],\"size\":500,\"totalSize\":0,\"page\":0,\"totalPages\":0}"));
     }
@@ -126,14 +130,14 @@ class CarApiControllerITTest {
         final String bId2 = RandomStringUtils.randomAlphanumeric(12);
         addCar(bId1, "colour", "make", "model", 1983);
         addCar(bId2, "colour", "make", "model", 1983);
-        mockMvc.perform(get("/cars"))
+        mockMvc.perform(get("/cars").header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(content().string("{\"content\":[{\"id\":\"" + bId1 + "\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983},{\"id\":\"" + bId2 + "\",\"model\":\"model\",\"make\":\"make\",\"colour\":\"colour\",\"year\":1983}],\"size\":500,\"totalSize\":2,\"page\":0,\"totalPages\":1}"));
     }
 
     @Test
     void givenCarAbsentForBusinessId_whenDeleteCarByBusinessId_then404() throws Exception {
-        mockMvc.perform(delete("/cars/2323232"))
+        mockMvc.perform(delete("/cars/2323232").header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isNotFound());
     }
 
@@ -141,13 +145,13 @@ class CarApiControllerITTest {
     void givenCarPresentForBusinessId_whenDeleteCarByBusinessId_thenSuccess() throws Exception {
         final String bId1 = RandomStringUtils.randomAlphanumeric(12);
         addCar(bId1, "colour", "make", "model", 1983);
-        mockMvc.perform(delete("/cars/" + bId1))
+        mockMvc.perform(delete("/cars/" + bId1).header(SECURITY_HEADER, BASIC_AUTH_DETAILS))
             .andExpect(status().isOk());
     }
 
     private void testValidationIssue(String make, String model, String colour, int year) throws Exception {
         CreateCarRequest carRequest = CreateCarRequest.builder().make(make).colour(colour).model(model).year(year).build();
-        mockMvc.perform(post("/cars").contentType(MediaType.APPLICATION_JSON).content(mapper().writeValueAsString(carRequest)))
+        mockMvc.perform(post("/cars").header(SECURITY_HEADER, BASIC_AUTH_DETAILS).contentType(MediaType.APPLICATION_JSON).content(mapper().writeValueAsString(carRequest)))
             .andExpect(status().is4xxClientError());
     }
 

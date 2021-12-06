@@ -4,3 +4,7 @@ spring:
       ddl-auto: update
       naming-strategy: org.hibernate.cfg.EJB3NamingStrategy
     show-sql: true
+  security:
+    user:
+      name: car-api
+      password: passw0rd
